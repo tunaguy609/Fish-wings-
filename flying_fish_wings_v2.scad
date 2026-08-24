@@ -75,7 +75,7 @@ function depth_at(t) =
     blend_profile(t, wing_root_depth, wing_mid_depth, wing_tip_depth, 0.40);
 
 function span_x(t, side) =
-    side * (ring_outer_diameter / 2 - wing_root_overlap + wing_span * t);
+    side * (ring_outer_diameter / 2 - wing_root_overlap + wing_span * (1 - t));
 
 function span_y(t) =
     wing_root_offset
