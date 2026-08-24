@@ -119,9 +119,10 @@ module wing_anchor(side)
 
 module wing_section(t, side)
 {
-    translate([span_x(t, side), span_y(t), span_z(t)])
-        rotate([pitch_at(t), 0, 0])
-            loft_section(depth_at(t), chord_at(t), thickness_at(t));
+    rotate([0, 0, side == 1 ? 180 : -180])
+        translate([span_x(t, side), span_y(t), span_z(t)])
+            rotate([pitch_at(t), 0, 0])
+                loft_section(depth_at(t), chord_at(t), thickness_at(t));
 }
 
 
