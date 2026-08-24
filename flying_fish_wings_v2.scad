@@ -112,7 +112,7 @@ module loft_section(length, chord, thickness)
 
 module wing_anchor(side)
 {
-    translate([side * ring_outer_diameter * 0.16, wing_root_offset * 0.90, ring_thickness * 0.45])
+    translate([side * (ring_outer_diameter/2 - wing_root_overlap + 0.8), wing_root_offset * 0.90, ring_thickness * 0.45])
         rotate([4, 0, 0])
             loft_section(root_anchor_depth, root_anchor_chord, root_anchor_thickness);
 }
