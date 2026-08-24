@@ -68,17 +68,14 @@ module center_ring()
 //
 // The wing starts at the ring and sweeps backward.
 // It becomes wider through the middle and tapers
-// aggressively toward the flying-fish style tip.
+// toward the flying-fish style tip.
 // ============================================================
 
 module right_wing()
 {
     pts =
     [
-        // -------------------------
         // FRONT / ROOT
-        // -------------------------
-
         [0, 5],
 
         // Leading edge
@@ -92,10 +89,7 @@ module right_wing()
         // Tip
         [65, 0],
 
-        // -------------------------
-        // TRAILING EDGE
-        // -------------------------
-
+        // Trailing edge
         [58, 2],
         [49, 6],
         [39, 9],
@@ -107,11 +101,9 @@ module right_wing()
         [0, 4]
     ];
 
-    wing_surface(
-        pts,
-        wing_thickness,
-        tip_curl
-    );
+    // Reliable wing surface for Scadder/OpenSCAD web renderers
+    rotate([0, -8, 0])
+        wing_surface(pts, wing_thickness, tip_curl);
 }
 
 
@@ -122,87 +114,40 @@ module right_wing()
 module left_wing()
 {
     mirror([0, 1, 0])
-        right_wing();
+        rotate([0, -8, 0])
+            wing_surface(
+                [
+                    [0, 5],[7, 9],[16, 14],[27, 18],[39, 17],[50, 13],[59, 7],
+                    [65, 0],
+                    [58, 2],[49, 6],[39, 9],[29, 11],[19, 10],[10, 7],[0, 4]
+                ],
+                wing_thickness,
+                tip_curl
+            );
 }
 
 
 // ============================================================
 // WING SURFACE
 //
-// Creates a thin 3D wing while gradually raising the
-// outer tip for the flying-fish curl.
+// Uses linear_extrude for compatibility with web renderers.
 // ============================================================
 
 module wing_surface(points, thickness, curl)
 {
-    n = len(points);
-
-    bottom =
-    [
-        for (p = points)
-        [
-            p[0],
-            p[1],
-            wing_curl(p[0], curl)
-        ]
-    ];
-
-    top =
-    [
-        for (p = points)
-        [
-            p[0],
-            p[1],
-            wing_curl(p[0], curl) + thickness
-        ]
-    ];
-
-    vertices = concat(bottom, top);
-
-    faces = [];
-
-    // Bottom face
-    faces = concat(
-        faces,
-        [
-            [for (i = [n-1:-1:0]) i]
-        ]
-    );
-
-    // Top face
-    faces = concat(
-        faces,
-        [
-            [for (i = [0:n-1]) i+n]
-        ]
-    );
-
-    // Outside walls
-    for (i = [0:n-1])
-    {
-        j = (i + 1) % n;
-
-        faces = concat(
-            faces,
-            [
-                [i, j, j+n, i+n]
-            ]
-        );
-    }
-
-    polyhedron(
-        points = vertices,
-        faces = faces,
-        convexity = 10
-    );
+    linear_extrude(
+        height = thickness,
+        center = false,
+        convexity = 10,
+        twist = 6,
+        scale = [1.0, 0.92]
+    )
+    polygon(points);
 }
 
 
 // ============================================================
-// WING CURL
-//
-// Flat near the ring.
-// Gradually rises toward the outer tip.
+// WING CURL (kept for future tuning)
 // ============================================================
 
 function wing_curl(x, curl) =
@@ -211,8 +156,6 @@ function wing_curl(x, curl) =
 
 // ============================================================
 // RIGHT WING ROOT REINFORCEMENT
-//
-// Thicker TPU where the flexible wing meets the ring.
 // ============================================================
 
 module right_root()
