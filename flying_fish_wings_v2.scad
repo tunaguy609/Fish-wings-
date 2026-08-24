@@ -28,8 +28,8 @@ mid_span_bias         = 0.46;
 
 wing_span             = 62.0;
 wing_root_overlap     = 1.6;
-wing_root_offset      = ring_outer_diameter * 0.54;
-wing_sweep_back       = 7.4;
+wing_root_offset      = 0.0;
+wing_sweep_back       = 0.0;
 wing_tip_lift         = 5.8;
 wing_tip_pitch        = 18.0;
 
