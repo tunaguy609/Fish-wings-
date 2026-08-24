@@ -19,7 +19,7 @@ collar_diameter       = 15.5;
 collar_clearance      = 0.7;
 
 ring_inner_diameter   = collar_diameter + collar_clearance;
-ring_outer_diameter   = 22.4;
+ring_outer_diameter   = 20;
 ring_thickness        = 1.8;
 
 wing_sections         = 9;
@@ -30,12 +30,12 @@ wing_span             = 62.0;
 wing_root_overlap     = 1.6;
 wing_root_offset      = 0.0;
 wing_sweep_back       = 0.0;
-wing_tip_lift         = 5.8;
-wing_tip_pitch        = 18.0;
+wing_tip_lift         = 0;
+wing_tip_pitch        = 0;
 
-wing_root_chord       = 13.0;
-wing_mid_chord        = 21.0;
-wing_tip_chord        = 5.8;
+wing_root_chord       = 10;
+wing_mid_chord        = 13;
+wing_tip_chord        = 2;
 
 wing_root_thickness   = 2.2;
 wing_mid_thickness    = 1.35;
