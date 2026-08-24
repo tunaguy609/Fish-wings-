@@ -74,8 +74,8 @@ function thickness_at(t) =
 function depth_at(t) =
     blend_profile(t, wing_root_depth, wing_mid_depth, wing_tip_depth, 0.40);
 
-function span_x(t) =
-    ring_outer_diameter / 2 - wing_root_overlap + wing_span * t;
+function span_x(t, side) =
+    side * (ring_outer_diameter / 2 - wing_root_overlap + wing_span * t);
 
 function span_y(t) =
     wing_root_offset
@@ -110,16 +110,16 @@ module loft_section(length, chord, thickness)
         sphere(r = 1, $fn = section_detail);
 }
 
-module wing_anchor()
+module wing_anchor(side)
 {
-    translate([ring_outer_diameter * 0.16, wing_root_offset * 0.90, ring_thickness * 0.45])
+    translate([side * ring_outer_diameter * 0.16, wing_root_offset * 0.90, ring_thickness * 0.45])
         rotate([4, 0, 0])
             loft_section(root_anchor_depth, root_anchor_chord, root_anchor_thickness);
 }
 
-module wing_section(t)
+module wing_section(t, side)
 {
-    translate([span_x(t), span_y(t), span_z(t)])
+    translate([span_x(t, side), span_y(t), span_z(t)])
         rotate([pitch_at(t), 0, 0])
             loft_section(depth_at(t), chord_at(t), thickness_at(t));
 }
@@ -129,20 +129,20 @@ module wing_section(t)
 // WING LOFT
 // ============================================================
 
-module single_wing()
+module single_wing(side=1)
 {
     hull()
     {
-        wing_anchor();
-        wing_section(0);
+        wing_anchor(side);
+        wing_section(0, side);
     }
 
     for (i = [0 : wing_sections - 2])
     {
         hull()
         {
-            wing_section(i / (wing_sections - 1));
-            wing_section((i + 1) / (wing_sections - 1));
+            wing_section(i / (wing_sections - 1), side);
+            wing_section((i + 1) / (wing_sections - 1), side);
         }
     }
 }
@@ -156,8 +156,6 @@ union()
 {
     center_ring();
 
-    single_wing();
-
-    mirror([1, 0, 0])
-        single_wing();
+    single_wing(1);
+    single_wing(-1);
 }
