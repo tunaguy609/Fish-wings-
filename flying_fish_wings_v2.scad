@@ -1,188 +1,150 @@
 // ============================================================
-// FLYING FISH WING ASSEMBLY - VERSION 2
+// LOFTED FLYING FISH WINGS
 // TPU 95A
 //
-// Designed for 15.5 mm lure skirt collar
-//
-// RING:
-//   Inside diameter: 16.0 mm
-//   Outside diameter: 22.0 mm
-//   Thickness: 1.6 mm
-//
-// WINGS:
-//   Length: 65 mm each
-//   Total span: approximately 130 mm
-//   Maximum width: 18 mm
-//   Main thickness: 0.75 mm
-//   Reinforced root: 1.25 mm
-//   Upward tip curl: approximately 4 mm
-//
+// Parametric flying-fish style fins sized around a 15.5 mm
+// lure skirt collar. The wings are built from stacked rounded
+// sections that are hulled together for a smoother, more
+// organic fin profile than a flat polygon extrusion.
 // ============================================================
 
-$fn = 96;
+$fn = 72;
 
 
 // ============================================================
 // USER ADJUSTMENTS
 // ============================================================
 
-ring_id = 16.0;          // Must be larger than 15.5 mm collar
-ring_od = 22.0;
-ring_thickness = 1.6;
+collar_diameter       = 15.5;
+collar_clearance      = 0.7;
 
-wing_length = 65.0;
-wing_max_width = 18.0;
+ring_inner_diameter   = collar_diameter + collar_clearance;
+ring_outer_diameter   = 22.4;
+ring_thickness        = 1.8;
 
-wing_thickness = 0.75;
-root_thickness = 1.25;
+wing_sections         = 9;
+section_detail        = 28;
+mid_span_bias         = 0.46;
 
-tip_curl = 4.0;
+wing_span             = 62.0;
+wing_root_overlap     = 1.6;
+wing_root_offset      = ring_outer_diameter * 0.54;
+wing_sweep_back       = 7.4;
+wing_tip_lift         = 5.8;
+wing_tip_pitch        = 18.0;
+
+wing_root_chord       = 13.0;
+wing_mid_chord        = 21.0;
+wing_tip_chord        = 5.8;
+
+wing_root_thickness   = 2.2;
+wing_mid_thickness    = 1.35;
+wing_tip_thickness    = 0.8;
+
+wing_root_depth       = 4.4;
+wing_mid_depth        = 3.1;
+wing_tip_depth        = 1.4;
+
+root_anchor_depth     = 7.0;
+root_anchor_chord     = 8.5;
+root_anchor_thickness = 2.5;
 
 
 // ============================================================
-// CENTER MOUNTING RING
+// HELPERS
+// ============================================================
+
+function clamp01(v) = max(0, min(1, v));
+function lerp(a, b, t) = a + (b - a) * t;
+function smoothstep(t) =
+    let(u = clamp01(t))
+        u * u * (3 - 2 * u);
+
+function blend_profile(t, start_value, peak_value, end_value, peak_t) =
+    t < peak_t
+        ? lerp(start_value, peak_value, smoothstep(t / peak_t))
+        : lerp(peak_value, end_value, smoothstep((t - peak_t) / (1 - peak_t)));
+
+function chord_at(t) =
+    blend_profile(t, wing_root_chord, wing_mid_chord, wing_tip_chord, mid_span_bias);
+
+function thickness_at(t) =
+    blend_profile(t, wing_root_thickness, wing_mid_thickness, wing_tip_thickness, 0.52);
+
+function depth_at(t) =
+    blend_profile(t, wing_root_depth, wing_mid_depth, wing_tip_depth, 0.40);
+
+function span_x(t) =
+    ring_outer_diameter / 2 - wing_root_overlap + wing_span * t;
+
+function span_y(t) =
+    wing_root_offset
+    - wing_sweep_back * pow(t, 1.15)
+    + 1.2 * sin(180 * t);
+
+function span_z(t) =
+    ring_thickness * 0.35 + wing_tip_lift * pow(t, 1.6);
+
+function pitch_at(t) =
+    wing_tip_pitch * pow(t, 1.35);
+
+
+// ============================================================
+// CORE SHAPES
 // ============================================================
 
 module center_ring()
 {
     difference()
     {
-        cylinder(
-            d = ring_od,
-            h = ring_thickness,
-            $fn = 96
-        );
+        cylinder(d = ring_outer_diameter, h = ring_thickness);
 
         translate([0, 0, -0.5])
-        cylinder(
-            d = ring_id,
-            h = ring_thickness + 1,
-            $fn = 96
-        );
+            cylinder(d = ring_inner_diameter, h = ring_thickness + 1);
     }
 }
 
-
-// ============================================================
-// RIGHT WING
-//
-// The wing starts at the ring and sweeps backward.
-// It becomes wider through the middle and tapers
-// toward the flying-fish style tip.
-// ============================================================
-
-module right_wing()
+module loft_section(length, chord, thickness)
 {
-    pts =
-    [
-        // FRONT / ROOT
-        [0, 5],
+    scale([length / 2, chord / 2, thickness / 2])
+        sphere(r = 1, $fn = section_detail);
+}
 
-        // Leading edge
-        [7, 9],
-        [16, 14],
-        [27, 18],
-        [39, 17],
-        [50, 13],
-        [59, 7],
+module wing_anchor()
+{
+    translate([ring_outer_diameter * 0.16, wing_root_offset * 0.90, ring_thickness * 0.45])
+        rotate([4, 0, 0])
+            loft_section(root_anchor_depth, root_anchor_chord, root_anchor_thickness);
+}
 
-        // Tip
-        [65, 0],
-
-        // Trailing edge
-        [58, 2],
-        [49, 6],
-        [39, 9],
-        [29, 11],
-        [19, 10],
-        [10, 7],
-
-        // Back to root
-        [0, 4]
-    ];
-
-    // Reliable wing surface for Scadder/OpenSCAD web renderers
-    rotate([0, -8, 0])
-        wing_surface(pts, wing_thickness, tip_curl);
+module wing_section(t)
+{
+    translate([span_x(t), span_y(t), span_z(t)])
+        rotate([pitch_at(t), 0, 0])
+            loft_section(depth_at(t), chord_at(t), thickness_at(t));
 }
 
 
 // ============================================================
-// LEFT WING
+// WING LOFT
 // ============================================================
 
-module left_wing()
+module single_wing()
 {
-    mirror([0, 1, 0])
-        rotate([0, -8, 0])
-            wing_surface(
-                [
-                    [0, 5],[7, 9],[16, 14],[27, 18],[39, 17],[50, 13],[59, 7],
-                    [65, 0],
-                    [58, 2],[49, 6],[39, 9],[29, 11],[19, 10],[10, 7],[0, 4]
-                ],
-                wing_thickness,
-                tip_curl
-            );
-}
+    hull()
+    {
+        wing_anchor();
+        wing_section(0);
+    }
 
-
-// ============================================================
-// WING SURFACE
-//
-// Uses linear_extrude for compatibility with web renderers.
-// ============================================================
-
-module wing_surface(points, thickness, curl)
-{
-    linear_extrude(
-        height = thickness,
-        center = false,
-        convexity = 10,
-        twist = 6,
-        scale = [1.0, 0.92]
-    )
-    polygon(points);
-}
-
-
-// ============================================================
-// WING CURL (kept for future tuning)
-// ============================================================
-
-function wing_curl(x, curl) =
-    curl * pow(x / wing_length, 2);
-
-
-// ============================================================
-// RIGHT WING ROOT REINFORCEMENT
-// ============================================================
-
-module right_root()
-{
-    linear_extrude(height = root_thickness)
-    polygon(
-        [
-            [0, 4],
-            [7, 7],
-            [14, 11],
-            [17, 13],
-            [13, 14],
-            [7, 11],
-            [0, 8]
-        ]
-    );
-}
-
-
-// ============================================================
-// LEFT WING ROOT REINFORCEMENT
-// ============================================================
-
-module left_root()
-{
-    mirror([0, 1, 0])
-        right_root();
+    for (i = [0 : wing_sections - 2])
+    {
+        hull()
+        {
+            wing_section(i / (wing_sections - 1));
+            wing_section((i + 1) / (wing_sections - 1));
+        }
+    }
 }
 
 
@@ -192,16 +154,10 @@ module left_root()
 
 union()
 {
-    // Center mounting ring
     center_ring();
 
-    // Right flying-fish wing
-    right_wing();
+    single_wing();
 
-    // Left flying-fish wing
-    left_wing();
-
-    // Reinforced wing roots
-    right_root();
-    left_root();
+    mirror([0, 1, 0])
+        single_wing();
 }
