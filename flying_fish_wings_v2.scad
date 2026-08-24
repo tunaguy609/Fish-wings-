@@ -152,10 +152,26 @@ module single_wing(side=1)
 // FINAL PRINTABLE ASSEMBLY
 // ============================================================
 
+module wings_only()
+{
+    single_wing(1);
+    single_wing(-1);
+}
+
+module inner_hole_cutter()
+{
+    // Slightly oversized in Z so subtraction is clean
+    translate([0, 0, -1])
+        cylinder(d = ring_inner_diameter, h = ring_thickness + 2);
+}
+
 union()
 {
     center_ring();
 
-    single_wing(1);
-    single_wing(-1);
+    difference()
+    {
+        wings_only();
+        inner_hole_cutter();
+    }
 }
